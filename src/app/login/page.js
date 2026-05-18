@@ -14,8 +14,36 @@ export default function LoginPage() {
     password: "",
   });
 
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+    general: "",
+  });
+
+  const validateForm = () => {
+    const newErrors = {
+      email: "",
+      password: "",
+      general: "",
+    };
+
+    if (!form.email.trim()) {
+      newErrors.email = "Lütfen email adresinizi giriniz.";
+    }
+
+    if (!form.password.trim()) {
+      newErrors.password = "Lütfen şifrenizi giriniz.";
+    }
+
+    setErrors(newErrors);
+
+    return !newErrors.email && !newErrors.password;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
 
     const res = await signIn("credentials", {
       email: form.email,
@@ -23,10 +51,13 @@ export default function LoginPage() {
       redirect: false,
     });
 
-    if (res.ok) {
+    if (res?.ok) {
       router.push("/");
     } else {
-      alert("Giriş başarısız");
+      setErrors((prev) => ({
+        ...prev,
+        general: "Email veya şifre hatalı. Lütfen tekrar deneyiniz.",
+      }));
     }
   };
 
@@ -51,7 +82,13 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {errors.general && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+            {errors.general}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700">
               Email Adresi
@@ -66,15 +103,32 @@ export default function LoginPage() {
               <input
                 type="email"
                 placeholder="ornek@email.com"
-                className="w-full rounded-2xl border border-orange-100 bg-orange-50 py-4 pl-4 pr-14 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                onChange={(e) =>
+                value={form.email}
+                className={`w-full rounded-2xl border bg-orange-50 py-4 pl-4 pr-14 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:bg-white ${
+                  errors.email
+                    ? "border-red-300 focus:border-red-400"
+                    : "border-orange-100 focus:border-orange-400"
+                }`}
+                onChange={(e) => {
                   setForm({
                     ...form,
                     email: e.target.value,
-                  })
-                }
+                  });
+
+                  setErrors((prev) => ({
+                    ...prev,
+                    email: "",
+                    general: "",
+                  }));
+                }}
               />
             </div>
+
+            {errors.email && (
+              <p className="text-sm font-semibold text-red-600">
+                {errors.email}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -89,15 +143,32 @@ export default function LoginPage() {
               <input
                 type="password"
                 placeholder="••••••••"
-                className="w-full rounded-2xl border border-orange-100 bg-orange-50 py-4 pl-4 pr-14 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                onChange={(e) =>
+                value={form.password}
+                className={`w-full rounded-2xl border bg-orange-50 py-4 pl-4 pr-14 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:bg-white ${
+                  errors.password
+                    ? "border-red-300 focus:border-red-400"
+                    : "border-orange-100 focus:border-orange-400"
+                }`}
+                onChange={(e) => {
                   setForm({
                     ...form,
                     password: e.target.value,
-                  })
-                }
+                  });
+
+                  setErrors((prev) => ({
+                    ...prev,
+                    password: "",
+                    general: "",
+                  }));
+                }}
               />
             </div>
+
+            {errors.password && (
+              <p className="text-sm font-semibold text-red-600">
+                {errors.password}
+              </p>
+            )}
           </div>
 
           <button className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 py-4 text-lg font-black text-white transition hover:bg-orange-600">

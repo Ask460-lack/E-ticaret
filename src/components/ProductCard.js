@@ -1,14 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Eye } from "lucide-react";
+import { ShoppingCart, Eye, CheckCircle2 } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useSession } from "next-auth/react";
 
 export default function ProductCard({ product }) {
   const addToCart = useCartStore((state) => state.addToCart);
   const { data: session } = useSession();
+
+  const [added, setAdded] = useState(false);
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    setAdded(true);
+
+    setTimeout(() => {
+      setAdded(false);
+    }, 1800);
+  };
 
   return (
     <div className="group flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-orange-100 bg-white text-slate-900 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl">
@@ -49,13 +61,22 @@ export default function ProductCard({ product }) {
           </Link>
 
           {session?.user?.role !== "admin" && (
-            <button
-              onClick={() => addToCart(product)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-4 font-bold text-white shadow transition hover:bg-orange-600"
-            >
-              <ShoppingCart size={18} />
-              Sepete Ekle
-            </button>
+            <div>
+              <button
+                onClick={handleAddToCart}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-4 font-bold text-white shadow transition hover:bg-orange-600"
+              >
+                <ShoppingCart size={18} />
+                Sepete Ekle
+              </button>
+
+              {added && (
+                <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
+                  <CheckCircle2 size={18} />
+                  Ürün sepete eklendi
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

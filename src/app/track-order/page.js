@@ -17,11 +17,15 @@ export default function TrackOrderPage() {
     email: "",
     orderCode: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const [order, setOrder] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setLoading(true);
+    setOrder(null);
 
     try {
       const res = await axios.post("/api/orders/track", form);
@@ -31,6 +35,8 @@ export default function TrackOrderPage() {
       setOrder(null);
 
       alert(error.response?.data?.error || "Sipariş bulunamadı");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,9 +117,21 @@ export default function TrackOrderPage() {
             </div>
           </div>
 
-          <button className="flex w-full items-center justify-center gap-3 rounded-2xl bg-orange-500 px-6 py-4 text-lg font-black text-white transition hover:bg-orange-600">
-            <Search size={22} />
-            Siparişi Sorgula
+          <button
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-orange-500 px-6 py-4 text-lg font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-300"
+          >
+            {loading ? (
+              <>
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                Sorgulanıyor...
+              </>
+            ) : (
+              <>
+                <Search size={22} />
+                Siparişi Sorgula
+              </>
+            )}
           </button>
         </div>
       </form>
