@@ -34,6 +34,12 @@ export default function CheckoutPage() {
     return sum + item.price * item.quantity;
   }, 0);
 
+  const formatPrice = (price) => {
+    return Number(price).toLocaleString("tr-TR", {
+      maximumFractionDigits: 0,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -260,9 +266,7 @@ export default function CheckoutPage() {
             >
               <Lock size={22} />
 
-              {loading
-                ? "Ödeme İşleniyor..."
-                : `₺${Number(total).toLocaleString("tr-TR")} Öde`}
+              {loading ? "Ödeme İşleniyor..." : `₺${formatPrice(total)} Öde`}
             </button>
           </div>
         </form>
@@ -285,7 +289,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <p className="shrink-0 font-black text-orange-600">
-                  ₺{(item.price * item.quantity).toLocaleString("tr-TR")}
+                  ₺{formatPrice(item.price * item.quantity)}
                 </p>
               </div>
             ))}
@@ -295,10 +299,7 @@ export default function CheckoutPage() {
             <span className="text-lg font-bold text-slate-950">Toplam</span>
 
             <span className="text-3xl font-black text-orange-600">
-              ₺
-              {Number(product.price).toLocaleString("tr-TR", {
-                maximumFractionDigits: 0,
-              })}
+              ₺{formatPrice(total)}
             </span>
           </div>
 
