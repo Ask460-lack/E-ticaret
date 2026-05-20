@@ -1,18 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
-import { PackageCheck, Truck, CheckCircle2, ShoppingBag } from "lucide-react";
+import {
+  PackageCheck,
+  Truck,
+  CheckCircle2,
+  ShoppingBag,
+  Search,
+  Filter,
+} from "lucide-react";
 
 export default function AdminOrdersPage() {
   const { data: session, status } = useSession();
 
   const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchOrders = async () => {
     const res = await axios.get("/api/orders");
-
     setOrders(res.data);
   };
 
@@ -29,6 +37,21 @@ export default function AdminOrdersPage() {
 
     fetchOrders();
   };
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const customerName = order.customer?.name?.toLowerCase() || "";
+      const searchValue = search.toLowerCase().trim();
+
+      const matchesSearch =
+        searchValue === "" || customerName.includes(searchValue);
+
+      const matchesStatus =
+        statusFilter === "all" || order.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [orders, search, statusFilter]);
 
   if (status === "loading") {
     return (
@@ -76,9 +99,61 @@ export default function AdminOrdersPage() {
         </h1>
 
         <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-          Gelen siparişleri yönetin, durumlarını güncelleyin ve müşteri
-          bilgilerini görüntüleyin.
+          Gelen siparişleri yönetin, durumlarını filtreleyin ve müşteri adına
+          göre hızlıca arama yapın.
         </p>
+      </section>
+
+      <section className="mb-10 rounded-[32px] border border-orange-100 bg-white p-5 shadow-sm sm:p-6 lg:p-8">
+        <div className="grid gap-4 lg:grid-cols-[1fr_260px_180px]">
+          <div className="relative">
+            <Search
+              size={20}
+              className="absolute right-5 top-1/2 -translate-y-1/2 text-orange-500"
+            />
+
+            <input
+              type="text"
+              value={search}
+              placeholder="Müşteri adı veya soyadı ile ara..."
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-2xl border border-orange-100 bg-orange-50 py-4 pl-4 pr-14 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
+            />
+          </div>
+
+          <div className="relative">
+            <Filter
+              size={20}
+              className="absolute right-5 top-1/2 -translate-y-1/2 text-orange-500"
+            />
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full appearance-none rounded-2xl border border-orange-100 bg-orange-50 py-4 pl-4 pr-14 font-semibold text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white"
+            >
+              <option value="all">Tüm Durumlar</option>
+              <option value="hazırlanıyor">Hazırlanıyor</option>
+              <option value="kargoda">Kargoda</option>
+              <option value="teslim edildi">Teslim Edildi</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setStatusFilter("all");
+            }}
+            className="rounded-2xl border border-orange-200 bg-white px-5 py-4 font-black text-orange-700 transition hover:bg-orange-50"
+          >
+            Temizle
+          </button>
+        </div>
+
+        <div className="mt-5 rounded-2xl bg-orange-50 px-5 py-4 text-sm font-bold text-orange-700">
+          {filteredOrders.length} sipariş bulundu
+        </div>
       </section>
 
       {orders.length === 0 ? (
@@ -91,9 +166,19 @@ export default function AdminOrdersPage() {
             Yeni siparişler burada görüntülenecek.
           </p>
         </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="rounded-[32px] border border-orange-100 bg-white p-12 text-center shadow-sm">
+          <h2 className="text-3xl font-black text-slate-950">
+            Sonuç bulunamadı
+          </h2>
+
+          <p className="mt-5 text-lg text-slate-600">
+            Arama veya filtre seçeneklerini değiştirerek tekrar deneyin.
+          </p>
+        </div>
       ) : (
         <div className="space-y-10">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <div
               key={order._id}
               className="rounded-[32px] border border-orange-100 bg-white p-8 shadow-sm"
@@ -107,9 +192,7 @@ export default function AdminOrdersPage() {
 
                     <div className="mt-5 space-y-3 text-slate-600">
                       <p>{order.customer?.email}</p>
-
                       <p>{order.customer?.phone}</p>
-
                       <p>{order.customer?.address}</p>
                     </div>
                   </div>
@@ -137,9 +220,9 @@ export default function AdminOrdersPage() {
 
                           <span className="shrink-0 text-lg font-black text-orange-600">
                             ₺
-                            {(item.price * item.quantity).toLocaleString(
-                              "tr-TR",
-                            )}
+                            {Number(product.price).toLocaleString("tr-TR", {
+                              maximumFractionDigits: 0,
+                            })}
                           </span>
                         </div>
                       ))}
@@ -182,9 +265,7 @@ export default function AdminOrdersPage() {
                     className="w-full rounded-2xl border border-orange-100 bg-white px-4 py-4 font-semibold text-slate-900 outline-none transition focus:border-orange-400"
                   >
                     <option value="hazırlanıyor">Hazırlanıyor</option>
-
                     <option value="kargoda">Kargoda</option>
-
                     <option value="teslim edildi">Teslim Edildi</option>
                   </select>
                 </div>

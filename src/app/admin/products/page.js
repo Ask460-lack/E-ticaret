@@ -103,7 +103,7 @@ export default function AdminProductsPage() {
     const productData = {
       title: form.title,
       description: form.description,
-      price: Number(form.price),
+      price: Math.round(Number(form.price)),
       images: imageArray,
       category: form.category,
       stock: Number(form.stock),
@@ -217,6 +217,8 @@ export default function AdminProductsPage() {
             value={form.price}
             placeholder="Fiyat"
             type="number"
+            min="0"
+            step="1"
             onChange={(e) =>
               setForm({
                 ...form,
@@ -338,7 +340,10 @@ export default function AdminProductsPage() {
 
             <div className="mt-5 space-y-2 rounded-2xl border border-orange-100 bg-orange-50 p-4">
               <p className="text-xl font-black text-orange-600">
-                ₺{Number(product.price).toLocaleString("tr-TR")}
+                ₺
+                {Number(product.price).toLocaleString("tr-TR", {
+                  maximumFractionDigits: 0,
+                })}
               </p>
 
               <p className="text-sm text-slate-600">

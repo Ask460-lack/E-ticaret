@@ -58,7 +58,10 @@ export default function CartPage() {
                     </h2>
 
                     <p className="mt-2 text-xl font-black text-orange-600">
-                      ₺{Number(item.price).toLocaleString("tr-TR")}
+                      ₺
+                      {Number(product.price).toLocaleString("tr-TR", {
+                        maximumFractionDigits: 0,
+                      })}
                     </p>
                   </div>
 

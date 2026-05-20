@@ -53,6 +53,14 @@ export default function Navbar() {
               Siparişlerim
             </Link>
           )}
+          {session && session?.user?.role !== "admin" && (
+            <Link
+              href="/favorites"
+              className="rounded-xl px-4 py-2 font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-600"
+            >
+              Favorilerim
+            </Link>
+          )}
 
           {session?.user?.role === "admin" && (
             <Link
@@ -147,6 +155,15 @@ export default function Navbar() {
                 className="rounded-2xl px-4 py-3 font-semibold text-slate-700 hover:bg-orange-50"
               >
                 Siparişlerim
+              </Link>
+            )}
+            {session && session?.user?.role !== "admin" && (
+              <Link
+                href="/favorites"
+                onClick={() => setOpen(false)}
+                className="rounded-2xl px-4 py-3 font-semibold text-slate-700 hover:bg-orange-50"
+              >
+                Favorilerim
               </Link>
             )}
 

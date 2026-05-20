@@ -295,7 +295,10 @@ export default function CheckoutPage() {
             <span className="text-lg font-bold text-slate-950">Toplam</span>
 
             <span className="text-3xl font-black text-orange-600">
-              ₺{Number(total).toLocaleString("tr-TR")}
+              ₺
+              {Number(product.price).toLocaleString("tr-TR", {
+                maximumFractionDigits: 0,
+              })}
             </span>
           </div>
 

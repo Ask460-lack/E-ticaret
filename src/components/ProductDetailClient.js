@@ -1,16 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ShoppingCart, PackageCheck } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useSession } from "next-auth/react";
+import { ShoppingCart, PackageCheck, Heart, CheckCircle2 } from "lucide-react";
+import axios from "axios";
 
 export default function ProductDetailClient({ product }) {
   const [activeImage, setActiveImage] = useState(product.images?.[0]);
 
   const addToCart = useCartStore((state) => state.addToCart);
   const { data: session } = useSession();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteMessage, setFavoriteMessage] = useState("");
+
+  useEffect(() => {
+    const checkFavorite = async () => {
+      if (!session?.user) return;
+
+      const res = await axios.get("/api/favorites");
+
+      const exists = res.data.some((item) => item._id === product._id);
+
+      setIsFavorite(exists);
+    };
+
+    checkFavorite();
+  }, [session, product._id]);
+
+  const handleFavorite = async () => {
+    if (!session?.user) {
+      setFavoriteMessage("Favorilere eklemek için giriş yapmalısınız.");
+
+      setTimeout(() => {
+        setFavoriteMessage("");
+      }, 2000);
+
+      return;
+    }
+
+    const res = await axios.post("/api/favorites", {
+      productId: product._id,
+    });
+
+    setIsFavorite(res.data.isFavorite);
+
+    setFavoriteMessage(
+      res.data.isFavorite
+        ? "Ürün favorilere eklendi."
+        : "Ürün favorilerden çıkarıldı.",
+    );
+
+    setTimeout(() => {
+      setFavoriteMessage("");
+    }, 2000);
+  };
 
   return (
     <main className="w-full">
@@ -59,7 +104,10 @@ export default function ProductDetailClient({ product }) {
           </h1>
 
           <p className="mt-8 text-4xl font-black text-orange-600">
-            ₺{Number(product.price).toLocaleString("tr-TR")}
+            ₺
+            {Number(product.price).toLocaleString("tr-TR", {
+              maximumFractionDigits: 0,
+            })}
           </p>
 
           <div className="mt-8 rounded-3xl border border-orange-100 bg-orange-50 p-5">
@@ -81,14 +129,37 @@ export default function ProductDetailClient({ product }) {
             </span>
           </div>
 
-          {session?.user?.role !== "admin" && (
-            <button
-              onClick={() => addToCart(product)}
-              className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-orange-500 px-8 py-4 text-lg font-black text-white shadow transition hover:bg-orange-600"
-            >
-              <ShoppingCart size={22} />
-              Sepete Ekle
-            </button>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            {session?.user?.role !== "admin" && (
+              <button
+                onClick={() => addToCart(product)}
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-orange-500 px-8 py-4 text-lg font-black text-white shadow transition hover:bg-orange-600"
+              >
+                <ShoppingCart size={22} />
+                Sepete Ekle
+              </button>
+            )}
+
+            {session?.user?.role !== "admin" && (
+              <button
+                onClick={handleFavorite}
+                className={`flex w-full items-center justify-center gap-3 rounded-2xl border px-8 py-4 text-lg font-black transition ${
+                  isFavorite
+                    ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                    : "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                }`}
+              >
+                <Heart size={22} fill={isFavorite ? "currentColor" : "none"} />
+                {isFavorite ? "Favorilerden Çıkar" : "Favorilere Ekle"}
+              </button>
+            )}
+          </div>
+
+          {favoriteMessage && (
+            <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
+              <CheckCircle2 size={18} />
+              {favoriteMessage}
+            </div>
           )}
         </div>
       </section>

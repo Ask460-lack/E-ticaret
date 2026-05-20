@@ -103,7 +103,10 @@ export default function MyOrdersPage() {
                     </div>
 
                     <p className="text-lg font-black text-orange-600">
-                      ₺{(item.price * item.quantity).toLocaleString("tr-TR")}
+                      ₺
+                      {Number(product.price).toLocaleString("tr-TR", {
+                        maximumFractionDigits: 0,
+                      })}
                     </p>
                   </div>
                 ))}
