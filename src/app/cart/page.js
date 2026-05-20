@@ -7,6 +7,11 @@ import { ShoppingCart, Trash2, Minus, Plus, CreditCard } from "lucide-react";
 export default function CartPage() {
   const { cart, removeFromCart, increaseQty, decreaseQty } = useCartStore();
 
+  const formatPrice = (price) =>
+    Number(price).toLocaleString("tr-TR", {
+      maximumFractionDigits: 0,
+    });
+
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
@@ -14,7 +19,6 @@ export default function CartPage() {
       <section className="mb-12 flex flex-col items-center rounded-[32px] border border-orange-100 bg-white px-6 py-12 text-center shadow-sm sm:px-8 lg:px-12">
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-5 py-2">
           <ShoppingCart size={18} className="text-orange-600" />
-
           <span className="text-sm font-bold text-orange-600">Sepetim</span>
         </div>
 
@@ -58,10 +62,7 @@ export default function CartPage() {
                     </h2>
 
                     <p className="mt-2 text-xl font-black text-orange-600">
-                      ₺
-                      {Number(product.price).toLocaleString("tr-TR", {
-                        maximumFractionDigits: 0,
-                      })}
+                      ₺{formatPrice(item.price)}
                     </p>
                   </div>
 
@@ -111,8 +112,7 @@ export default function CartPage() {
 
               <div className="flex justify-between text-slate-600">
                 <span>Ara Toplam</span>
-
-                <span>₺{Number(total).toLocaleString("tr-TR")}</span>
+                <span>₺{formatPrice(total)}</span>
               </div>
             </div>
 
@@ -120,7 +120,7 @@ export default function CartPage() {
               <span className="text-lg font-bold text-slate-950">Toplam</span>
 
               <span className="text-3xl font-black text-orange-600">
-                ₺{Number(total).toLocaleString("tr-TR")}
+                ₺{formatPrice(total)}
               </span>
             </div>
 
