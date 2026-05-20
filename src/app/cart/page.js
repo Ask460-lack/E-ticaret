@@ -129,7 +129,7 @@ export default function CartPage() {
               className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 py-4 font-black text-white transition hover:bg-orange-600"
             >
               <CreditCard size={20} />
-              Checkout
+              Ödeme Yap
             </Link>
           </aside>
         </div>
