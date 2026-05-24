@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Search,
   Filter,
+  Trash2,
 } from "lucide-react";
 
 export default function AdminOrdersPage() {
@@ -18,6 +19,11 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const formatPrice = (price) =>
+    Number(price).toLocaleString("tr-TR", {
+      maximumFractionDigits: 0,
+    });
 
   const fetchOrders = async () => {
     const res = await axios.get("/api/orders");
@@ -34,6 +40,18 @@ export default function AdminOrdersPage() {
     await axios.patch(`/api/orders/${id}`, {
       status: newStatus,
     });
+
+    fetchOrders();
+  };
+
+  const deleteOrder = async (id) => {
+    const confirmDelete = confirm(
+      "Teslim edilen bu siparişi silmek istediğine emin misin?",
+    );
+
+    if (!confirmDelete) return;
+
+    await axios.delete(`/api/orders/${id}`);
 
     fetchOrders();
   };
@@ -219,10 +237,7 @@ export default function AdminOrdersPage() {
                           </div>
 
                           <span className="shrink-0 text-lg font-black text-orange-600">
-                            ₺
-                            {Number(product.price).toLocaleString("tr-TR", {
-                              maximumFractionDigits: 0,
-                            })}
+                            ₺{formatPrice(item.price * item.quantity)}
                           </span>
                         </div>
                       ))}
@@ -237,7 +252,7 @@ export default function AdminOrdersPage() {
                     </p>
 
                     <h3 className="mt-4 text-4xl font-black text-orange-600">
-                      ₺{Number(order.total).toLocaleString("tr-TR")}
+                      ₺{formatPrice(order.total)}
                     </h3>
                   </div>
 
@@ -253,6 +268,9 @@ export default function AdminOrdersPage() {
                     {order.status === "teslim edildi" && (
                       <CheckCircle2 className="text-green-500" />
                     )}
+                    {order.status === "iptal edildi" && (
+                      <Trash2 className="text-red-500" />
+                    )}
 
                     <span className="font-bold capitalize text-slate-950">
                       {order.status}
@@ -267,7 +285,19 @@ export default function AdminOrdersPage() {
                     <option value="hazırlanıyor">Hazırlanıyor</option>
                     <option value="kargoda">Kargoda</option>
                     <option value="teslim edildi">Teslim Edildi</option>
+                    <option value="iptal edildi">İptal Edildi</option>
                   </select>
+
+                  {(order.status === "teslim edildi" ||
+                    order.status === "iptal edildi") && (
+                    <button
+                      onClick={() => deleteOrder(order._id)}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 px-5 py-4 font-black text-white transition hover:bg-red-600"
+                    >
+                      <Trash2 size={20} />
+                      Siparişi Sil
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

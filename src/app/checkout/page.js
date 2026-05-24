@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const { cart, clearCart } = useCartStore();
 
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     name: "",
@@ -40,31 +41,86 @@ export default function CheckoutPage() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (cart.length === 0) {
-      alert("Sepetiniz boş");
-      return;
-    }
+  const validateForm = () => {
+    const newErrors = {};
 
     const emailToUse = session?.user?.email || form.email;
 
-    if (!form.name || !emailToUse || !form.address || !form.phone) {
-      alert("Lütfen müşteri bilgilerini doldurun");
-      return;
+    if (cart.length === 0) {
+      newErrors.cart = "Sepetiniz boş. Lütfen önce ürün ekleyiniz.";
     }
 
-    if (
-      !card.cardHolderName ||
-      !card.cardNumber ||
-      !card.expireMonth ||
-      !card.expireYear ||
-      !card.cvc
-    ) {
-      alert("Lütfen kart bilgilerini doldurun");
-      return;
+    if (!form.name.trim()) {
+      newErrors.name = "Lütfen ad soyad giriniz.";
     }
+
+    if (!emailToUse.trim()) {
+      newErrors.email = "Lütfen email adresinizi giriniz.";
+    } else if (!/\S+@\S+\.\S+/.test(emailToUse)) {
+      newErrors.email = "Geçerli bir email adresi giriniz.";
+    }
+
+    if (!form.phone.trim()) {
+      newErrors.phone = "Lütfen telefon numarası giriniz.";
+    } else if (form.phone.replace(/\D/g, "").length < 10) {
+      newErrors.phone = "Telefon numarası eksik görünüyor.";
+    }
+
+    if (!form.address.trim()) {
+      newErrors.address = "Lütfen adres giriniz.";
+    }
+
+    if (!card.cardHolderName.trim()) {
+      newErrors.cardHolderName = "Kart üzerindeki isim zorunludur.";
+    }
+
+    if (!card.cardNumber.trim()) {
+      newErrors.cardNumber = "Kart numarası zorunludur.";
+    } else if (card.cardNumber.replace(/\s/g, "").length < 16) {
+      newErrors.cardNumber = "Kart numarası geçersiz.";
+    }
+
+    if (!card.expireMonth.trim()) {
+      newErrors.expireMonth = "Ay bilgisi gerekli.";
+    } else if (Number(card.expireMonth) < 1 || Number(card.expireMonth) > 12) {
+      newErrors.expireMonth = "Geçerli bir ay giriniz.";
+    }
+
+    if (!card.expireYear.trim()) {
+      newErrors.expireYear = "Yıl bilgisi gerekli.";
+    } else if (card.expireYear.length < 4) {
+      newErrors.expireYear = "Geçerli bir yıl giriniz.";
+    }
+
+    if (!card.cvc.trim()) {
+      newErrors.cvc = "CVC gerekli.";
+    } else if (card.cvc.length < 3) {
+      newErrors.cvc = "CVC geçersiz.";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const inputClass = (field) =>
+    `w-full rounded-2xl border p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:bg-white ${
+      errors[field]
+        ? "border-red-300 bg-red-50 focus:border-red-400"
+        : "border-orange-100 bg-orange-50 focus:border-orange-400"
+    }`;
+
+  const errorText = (field) =>
+    errors[field] ? (
+      <p className="text-sm font-semibold text-red-500">{errors[field]}</p>
+    ) : null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const emailToUse = session?.user?.email || form.email;
+
+    if (!validateForm()) return;
 
     try {
       setLoading(true);
@@ -90,11 +146,13 @@ export default function CheckoutPage() {
 
       clearCart();
 
-      alert("Ödeme başarılı");
-
       router.push(`/order-success/${res.data.order._id}`);
     } catch (error) {
-      alert(error.response?.data?.error || "Ödeme işlemi başarısız");
+      setErrors({
+        api:
+          error.response?.data?.error ||
+          "Ödeme işlemi sırasında bir hata oluştu.",
+      });
     } finally {
       setLoading(false);
     }
@@ -121,9 +179,22 @@ export default function CheckoutPage() {
         </p>
       </section>
 
+      {errors.api && (
+        <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-600">
+          {errors.api}
+        </div>
+      )}
+
+      {errors.cart && (
+        <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-600">
+          {errors.cart}
+        </div>
+      )}
+
       <div className="grid gap-8 xl:grid-cols-[1fr_380px]">
         <form
           onSubmit={handleSubmit}
+          noValidate
           className="rounded-[32px] border border-orange-100 bg-white p-6 shadow-sm sm:p-8 lg:p-10"
         >
           <div className="space-y-10">
@@ -137,54 +208,94 @@ export default function CheckoutPage() {
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
-                <input
-                  placeholder="Ad Soyad"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      name: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                />
+                <div className="space-y-2">
+                  <input
+                    placeholder="Ad Soyad"
+                    value={form.name}
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        name: e.target.value,
+                      });
 
-                <input
-                  placeholder="Email"
-                  value={session?.user?.email || form.email}
-                  disabled={!!session?.user?.email}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      email: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white disabled:bg-orange-100"
-                />
+                      setErrors((prev) => ({
+                        ...prev,
+                        name: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("name")}
+                  />
 
-                <input
-                  placeholder="Telefon"
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      phone: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                />
+                  {errorText("name")}
+                </div>
 
-                <input
-                  placeholder="Adres"
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      address: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                />
+                <div className="space-y-2">
+                  <input
+                    placeholder="Email"
+                    value={session?.user?.email || form.email}
+                    disabled={!!session?.user?.email}
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        email: e.target.value,
+                      });
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        email: "",
+                        api: "",
+                      }));
+                    }}
+                    className={`${inputClass("email")} disabled:bg-orange-100 disabled:text-slate-500`}
+                  />
+
+                  {errorText("email")}
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    placeholder="Telefon"
+                    value={form.phone}
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        phone: e.target.value,
+                      });
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        phone: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("phone")}
+                  />
+
+                  {errorText("phone")}
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    placeholder="Adres"
+                    value={form.address}
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        address: e.target.value,
+                      });
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        address: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("address")}
+                  />
+
+                  {errorText("address")}
+                </div>
               </div>
             </div>
 
@@ -198,65 +309,115 @@ export default function CheckoutPage() {
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
-                <input
-                  placeholder="Kart Üzerindeki İsim"
-                  value={card.cardHolderName}
-                  onChange={(e) =>
-                    setCard({
-                      ...card,
-                      cardHolderName: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white md:col-span-2"
-                />
+                <div className="space-y-2 md:col-span-2">
+                  <input
+                    placeholder="Kart Üzerindeki İsim"
+                    value={card.cardHolderName}
+                    onChange={(e) => {
+                      setCard({
+                        ...card,
+                        cardHolderName: e.target.value,
+                      });
 
-                <input
-                  placeholder="Kart Numarası"
-                  value={card.cardNumber}
-                  onChange={(e) =>
-                    setCard({
-                      ...card,
-                      cardNumber: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white md:col-span-2"
-                />
+                      setErrors((prev) => ({
+                        ...prev,
+                        cardHolderName: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("cardHolderName")}
+                  />
 
-                <input
-                  placeholder="Ay Örn: 12"
-                  value={card.expireMonth}
-                  onChange={(e) =>
-                    setCard({
-                      ...card,
-                      expireMonth: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                />
+                  {errorText("cardHolderName")}
+                </div>
 
-                <input
-                  placeholder="Yıl Örn: 2030"
-                  value={card.expireYear}
-                  onChange={(e) =>
-                    setCard({
-                      ...card,
-                      expireYear: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                />
+                <div className="space-y-2 md:col-span-2">
+                  <input
+                    placeholder="Kart Numarası"
+                    value={card.cardNumber}
+                    onChange={(e) => {
+                      setCard({
+                        ...card,
+                        cardNumber: e.target.value,
+                      });
 
-                <input
-                  placeholder="CVC"
-                  value={card.cvc}
-                  onChange={(e) =>
-                    setCard({
-                      ...card,
-                      cvc: e.target.value,
-                    })
-                  }
-                  className="rounded-2xl border border-orange-100 bg-orange-50 p-4 font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
-                />
+                      setErrors((prev) => ({
+                        ...prev,
+                        cardNumber: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("cardNumber")}
+                  />
+
+                  {errorText("cardNumber")}
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    placeholder="Ay Örn: 12"
+                    value={card.expireMonth}
+                    onChange={(e) => {
+                      setCard({
+                        ...card,
+                        expireMonth: e.target.value,
+                      });
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        expireMonth: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("expireMonth")}
+                  />
+
+                  {errorText("expireMonth")}
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    placeholder="Yıl Örn: 2030"
+                    value={card.expireYear}
+                    onChange={(e) => {
+                      setCard({
+                        ...card,
+                        expireYear: e.target.value,
+                      });
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        expireYear: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("expireYear")}
+                  />
+
+                  {errorText("expireYear")}
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    placeholder="CVC"
+                    value={card.cvc}
+                    onChange={(e) => {
+                      setCard({
+                        ...card,
+                        cvc: e.target.value,
+                      });
+
+                      setErrors((prev) => ({
+                        ...prev,
+                        cvc: "",
+                        api: "",
+                      }));
+                    }}
+                    className={inputClass("cvc")}
+                  />
+
+                  {errorText("cvc")}
+                </div>
               </div>
             </div>
 

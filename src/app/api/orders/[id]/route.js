@@ -1,29 +1,13 @@
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/adminAuth";
 
-export async function PATCH(req, context) {
+export async function PATCH(req, { params }) {
   try {
-    const admin = await requireAdmin();
-
-    if (!admin) {
-      return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
-    }
-
     await connectDB();
 
-    const { id } = await context.params;
+    const { id } = await params;
     const body = await req.json();
-
-    const allowedStatuses = ["hazırlanıyor", "kargoda", "teslim edildi"];
-
-    if (!allowedStatuses.includes(body.status)) {
-      return NextResponse.json(
-        { error: "Geçersiz sipariş durumu" },
-        { status: 400 },
-      );
-    }
 
     const updatedOrder = await Order.findByIdAndUpdate(
       id,
@@ -38,13 +22,37 @@ export async function PATCH(req, context) {
       );
     }
 
-    return NextResponse.json(JSON.parse(JSON.stringify(updatedOrder)));
+    return NextResponse.json(updatedOrder);
   } catch (error) {
-    console.log("ORDER UPDATE ERROR:", error);
-
     return NextResponse.json(
       { error: "Sipariş güncellenemedi" },
       { status: 500 },
     );
+  }
+}
+
+export async function DELETE(req, { params }) {
+  try {
+    await connectDB();
+
+    const { id } = await params;
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return NextResponse.json(
+        { error: "Sipariş bulunamadı" },
+        { status: 404 },
+      );
+    }
+
+    await Order.findByIdAndDelete(id);
+
+    return NextResponse.json({
+      success: true,
+      message: "Sipariş başarıyla silindi",
+    });
+  } catch (error) {
+    return NextResponse.json({ error: "Sipariş silinemedi" }, { status: 500 });
   }
 }

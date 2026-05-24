@@ -17,24 +17,70 @@ export default function TrackOrderPage() {
     email: "",
     orderCode: "",
   });
-  const [loading, setLoading] = useState(false);
 
+  const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState(null);
+  const [errors, setErrors] = useState({});
+
+  const formatPrice = (price) =>
+    Number(price).toLocaleString("tr-TR", {
+      maximumFractionDigits: 0,
+    });
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!form.email.trim()) {
+      newErrors.email = "Lütfen email adresinizi giriniz.";
+    } else if (!/\S+@\S+\.\S+/.test(form.email)) {
+      newErrors.email = "Geçerli bir email adresi giriniz.";
+    }
+
+    if (!form.orderCode.trim()) {
+      newErrors.orderCode = "Lütfen sipariş kodunuzu giriniz.";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const inputClass = (field) =>
+    `w-full rounded-2xl border py-4 pl-4 pr-14 text-base font-medium placeholder:text-slate-500 outline-none transition focus:bg-white ${
+      errors[field]
+        ? "border-red-300 bg-red-50 text-slate-900 focus:border-red-400"
+        : "border-orange-100 bg-orange-50 text-slate-900 focus:border-orange-400"
+    }`;
+
+  const errorText = (field) =>
+    errors[field] ? (
+      <p className="text-sm font-semibold text-red-500">{errors[field]}</p>
+    ) : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!validateForm()) return;
+
     setLoading(true);
     setOrder(null);
+    setErrors({});
 
     try {
-      const res = await axios.post("/api/orders/track", form);
+      const res = await axios.post("/api/orders/track", {
+        email: form.email.trim(),
+        orderCode: form.orderCode.trim(),
+      });
 
       setOrder(res.data);
     } catch (error) {
       setOrder(null);
 
-      alert(error.response?.data?.error || "Sipariş bulunamadı");
+      setErrors({
+        api:
+          error.response?.data?.error ||
+          "Sipariş bulunamadı. Email veya sipariş kodunu kontrol ediniz.",
+      });
     } finally {
       setLoading(false);
     }
@@ -61,8 +107,15 @@ export default function TrackOrderPage() {
         </p>
       </section>
 
+      {errors.api && (
+        <div className="mx-auto mb-8 w-full max-w-2xl rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-600">
+          {errors.api}
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="mx-auto w-full max-w-2xl rounded-[32px] border border-orange-100 bg-white p-6 shadow-sm sm:p-8"
       >
         <div className="space-y-6">
@@ -80,16 +133,24 @@ export default function TrackOrderPage() {
               <input
                 type="email"
                 placeholder="ornek@email.com"
-                className="w-full rounded-2xl border border-orange-100 bg-orange-50 py-4 pl-4 pr-14 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
+                className={inputClass("email")}
                 value={form.email}
-                onChange={(e) =>
+                onChange={(e) => {
                   setForm({
                     ...form,
                     email: e.target.value,
-                  })
-                }
+                  });
+
+                  setErrors((prev) => ({
+                    ...prev,
+                    email: "",
+                    api: "",
+                  }));
+                }}
               />
             </div>
+
+            {errorText("email")}
           </div>
 
           <div className="space-y-2">
@@ -105,16 +166,24 @@ export default function TrackOrderPage() {
 
               <input
                 placeholder="ORD-ABC123"
-                className="w-full rounded-2xl border border-orange-100 bg-orange-50 py-4 pl-4 pr-14 text-base font-medium uppercase text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-orange-400 focus:bg-white"
+                className={`${inputClass("orderCode")} uppercase`}
                 value={form.orderCode}
-                onChange={(e) =>
+                onChange={(e) => {
                   setForm({
                     ...form,
                     orderCode: e.target.value,
-                  })
-                }
+                  });
+
+                  setErrors((prev) => ({
+                    ...prev,
+                    orderCode: "",
+                    api: "",
+                  }));
+                }}
               />
             </div>
+
+            {errorText("orderCode")}
           </div>
 
           <button
@@ -195,7 +264,7 @@ export default function TrackOrderPage() {
                 </div>
 
                 <p className="text-lg font-black text-orange-600">
-                  ₺{(item.price * item.quantity).toLocaleString("tr-TR")}
+                  ₺{formatPrice(item.price * item.quantity)}
                 </p>
               </div>
             ))}
@@ -205,7 +274,7 @@ export default function TrackOrderPage() {
             <span className="text-lg font-bold text-slate-950">Toplam</span>
 
             <span className="text-3xl font-black text-orange-600">
-              ₺{Number(order.total).toLocaleString("tr-TR")}
+              ₺{formatPrice(order.total)}
             </span>
           </div>
         </div>
