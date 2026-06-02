@@ -100,13 +100,15 @@ export default function AdminProductsPage() {
       .map((img) => img.trim())
       .filter(Boolean);
 
+    const normalizedCategory = form.category.trim().toUpperCase();
+
     const productData = {
-      title: form.title,
-      description: form.description,
-      price: Math.round(Number(form.price)),
+      title: form.title.trim(),
+      description: form.description.trim(),
+      price: parseInt(String(form.price).replace(/\D/g, ""), 10),
       images: imageArray,
-      category: form.category,
-      stock: Number(form.stock),
+      category: normalizedCategory,
+      stock: parseInt(String(form.stock).replace(/\D/g, ""), 10),
     };
 
     if (editingId) {
